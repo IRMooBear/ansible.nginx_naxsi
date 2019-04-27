@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/IRMooBear/ansible.nginx_naxsi.svg?branch=master)](https://travis-ci.org/IRMooBear/ansible.nginx_naxsi)
+
 Nginx Naxsi
 =========
 This role download and compile the Naxsi Web Application Firewall module for Nginx as a dynamic module for configure it.
