@@ -1,0 +1,59 @@
+---
+# tasks file for nginx_naxsi
+- name: get naxsi nginx version
+  command: /usr/sbin/nginx -v
+  register: naxsi_get_nginx_version
+- name: set naxsi nginx version
+  set_fact:
+    naxsi_nginx_version: "{{ naxsi_get_nginx_version.stderr[21:] }}"
+- name: clone nbs-system/naxsi.git
+  become: yes
+  git:
+    repo: https://github.com/nbs-system/naxsi.git
+    dest: /usr/local/src/naxsi
+    clone: yes
+    update: yes
+    version: "{{ naxsi_version }}"
+  register: naxsi_repo
+- name: change ownership of naxsi repo
+  become: yes
+  file:
+    path: /usr/local/src/naxsi
+    owner: "{{ ansible_user }}"
+    recurse: yes
+- name: check naxsi exists
+  stat:
+    path: "{{ naxsi_config[ansible_os_family].install_dir }}/ngx_http_naxsi_module.so"
+  register: naxsi_module_check
+- import_tasks: compile_naxsi.yml
+  when: not naxsi_module_check.stat.exists or naxsi_repo.after != naxsi_repo.before
+- name: copy naxsi configuration template
+  become: yes
+  template:
+    src: naxsi.rules.conf.ini
+    dest: /etc/nginx/snippets/naxsi.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart nginx
+- name: load naxsi module
+  become: yes
+  template:
+    src: naxsi.module.conf.ini
+    dest: /etc/nginx/modules-enabled/50-mod-http-naxsi.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart nginx
+- name: load naxsi configuration
+  become: yes
+  template:
+    src: naxsi.conf.ini
+    dest: /etc/nginx/conf.d/naxsi.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+    - restart nginx

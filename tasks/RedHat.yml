@@ -1,0 +1,21 @@
+---
+- name: install nginx naxsi dependencies
+  become: yes
+  yum:
+    state: present
+    name: [
+      'pcre-devel',
+      'zlib-devel',
+      'openssl-devel',
+      'libxml2-devel',
+      'libxslt-devel',
+      'gd',
+      'gd-devel',
+      'perl-ExtUtils-Embed',
+      'GeoIP-devel',
+      'gperftools-devel'
+    ]
+  register: result
+  retries: 3
+  delay: 10
+  until: not result.failed

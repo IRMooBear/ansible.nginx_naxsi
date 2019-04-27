@@ -1,0 +1,48 @@
+---
+- import_tasks: Debian.yml
+  when: ansible_os_family == 'Debian'
+- import_tasks: RedHat.yml
+  when: ansible_os_family == 'RedHat'
+- name: get nginx source
+  become: yes
+  unarchive:
+    src: https://nginx.org/download/nginx-{{ naxsi_nginx_version }}.tar.gz
+    dest: /usr/local/src
+    remote_src: yes
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+- name: get nginx configuration
+  become: no
+  command: /usr/sbin/nginx -V
+  register: naxsi_nginx_configuration
+- name: auto configure naxsi
+  become: no
+  command: ./configure --add-dynamic-module=/usr/local/src/naxsi/naxsi_src/ {{ naxsi_nginx_configuration.stderr_lines[4][20:] }}
+  args:
+    chdir: /usr/local/src/nginx-{{ naxsi_nginx_version }}
+  when: naxsi_nginx_configure == ""
+- name: manual configure naxsi
+  become: no
+  command: ./configure --add-dynamic-module=/usr/local/src/naxsi/naxsi_src/ {{ naxsi_nginx_configure }}
+  args:
+    chdir: /usr/local/src/nginx-{{ naxsi_nginx_version }}
+  when: naxsi_nginx_configure != ""
+- name: make naxsi module
+  become: no
+  make:
+    target: modules
+  args:
+    chdir: /usr/local/src/nginx-{{ naxsi_nginx_version }}
+- name: copy naxsi module
+  become: yes
+  copy:
+    src: /usr/local/src/nginx-{{ naxsi_nginx_version}}/objs/ngx_http_naxsi_module.so
+    dest: "{{ naxsi_config[ansible_os_family].install_dir }}"
+    remote_src: true
+- name: copy naxsi_core.rules
+  become: yes
+  copy:
+    remote_src: true
+    src: /usr/local/src/naxsi/naxsi_config/naxsi_core.rules
+    dest: /etc/nginx/naxsi_core.rules
+    mode: 0644
