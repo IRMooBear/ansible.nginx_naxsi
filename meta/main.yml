@@ -48,10 +48,12 @@ galaxy_info:
   #   - 7
   #   - 99.99
   platforms:
-    - name: RedHat
+    - name: EL
       versions:
-        - centos
-        - amazon
+        - 7
+    - name: Amazon
+      version:
+        - all
     - name: Debian
       versions:
         - stretch
